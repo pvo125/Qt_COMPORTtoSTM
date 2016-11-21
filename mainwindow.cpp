@@ -118,7 +118,7 @@ void MainWindow::on_Disconnect_clicked()
 
 }
 
-void MainWindow::on_File_clicked()          //ghju  gvnjvbm
+void MainWindow::on_File_clicked()          //при нажатии на кнопку File.. открываем диалог по выбору файла бинарника
 {
     QString filename=QFileDialog::getOpenFileName(this,tr("Open file"),"D:\\STM32_проекты","All Files (*.*);;Binary files (*.bin);;Text files (*.txt)");
 
