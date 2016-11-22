@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
 #include "QtSerialPort/QSerialPort"
 #include "QtSerialPort/QSerialPortInfo"
 #include "QMessageBox"
@@ -10,13 +9,12 @@
 #include "QFile"
 //#include "QWidget"
 
-
-
 QTimer timer;
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+/*
+*   Конструктор для MainWindow
+***************************************************/
+MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     QWidget::setWindowTitle("STM UART Downloader");  // Название программы вверху окна
@@ -63,6 +61,10 @@ MainWindow::MainWindow(QWidget *parent) :
      QObject::connect(&timer,SIGNAL(timeout()),this,SLOT(TimerExpire()));
 
 }
+
+/*
+*   Деструктор для MainWindow
+***************************************************/
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -70,8 +72,9 @@ MainWindow::~MainWindow()
     serial.close();
 }
 
-
-
+/*
+*   слот для сигнала clicked() нопки Connect
+***************************************************/
 void MainWindow::on_Connect_clicked()
 {
     serial.setPortName(ui->COMx->currentText());  // устанавливаеми имя порта с виджета выбора доступных COM в системе
@@ -102,83 +105,96 @@ void MainWindow::on_Connect_clicked()
      }
     else        // если порт открылся с ошибкой значит занят или не рабочий.
        QMessageBox::information(this,tr("Error"),"COM port is busy!");      // Выводим QMessageBox
-
-
-
-
 }
 
+/*
+*   слот для сигнала clicked() нопки Disconnect
+****************************************************/
 void MainWindow::on_Disconnect_clicked()
 {
-    serial.close();
-    ui->COMx->setEnabled(true);
-    ui->SPEED->setEnabled(true);
-    ui->Connect->setEnabled(true);
-    ui->Disconnect->setEnabled(false);
-
+    serial.close();                     // закрываем COM порт
+    ui->COMx->setEnabled(true);         // виджет COMx активный
+    ui->SPEED->setEnabled(true);        // виджет SPEED активный
+    ui->Connect->setEnabled(true);      // кнопка Connect активна
+    ui->Disconnect->setEnabled(false);  // кнопка Disconnect  не активна
 }
 
-void MainWindow::on_File_clicked()          //при нажатии на кнопку File.. открываем диалог по выбору файла бинарника
+/*
+*   слот для сигнала clicked() нопки File...
+***************************************************/
+void MainWindow::on_File_clicked()
 {
+   /*при нажатии на кнопку File.. открываем диалог по выбору файла бинарника*/
     QString filename=QFileDialog::getOpenFileName(this,tr("Open file"),"C:\\","All Files (*.*);;Binary files (*.bin);;Text files (*.txt)");
 
-    /*file.setFileName(filename);
-    file.open(QIODevice::ReadOnly);*/
-    ui->FileName->setText(filename);
 
-    if(file.exists(ui->FileName->text()))
+    ui->FileName->setText(filename);             // записываем полный путь до бинарника в LineEdit
+
+    if(file.exists(ui->FileName->text()))       //проверка наличия файла с полным именем в LineEdit
       {
-        if(filename.endsWith(".bin"))
-            ui->Load_to_STM->setEnabled(true);
+        if(filename.endsWith(".bin"))           // елси существует проверяем на тип *.bin
+            ui->Load_to_STM->setEnabled(true);  // есои открыли бинарник Load_to_STM делаем активным
         else
-          ui->Load_to_STM->setEnabled(false);
+          ui->Load_to_STM->setEnabled(false);   // есои открыли не  бинарник Load_to_STM делаем  не активным
       }
     else
-      ui->Load_to_STM->setEnabled(false);
+      ui->Load_to_STM->setEnabled(false);       // если файла с полным именем не существует Load_to_STM делаем не активной
 }
+
+/*
+*   слот для сигнала textEdit виджета LineEdit
+***************************************************/
 void MainWindow::on_FileName_textEdited(const QString &arg1)
-{
+{   /* любое изменение строки с полным именем файла с виджета LineEdit проверяем */
     if(file.exists(arg1))
       {
-        if(arg1.endsWith(".bin"))
-            ui->Load_to_STM->setEnabled(true);
+        if(arg1.endsWith(".bin"))                   //  елси существует проверяем на тип *.bin
+            ui->Load_to_STM->setEnabled(true);      // есои открыли бинарник Load_to_STM делаем активным
       }
     else
-      ui->Load_to_STM->setEnabled(false);
+      ui->Load_to_STM->setEnabled(false);           // если файла с полным именем не существует Load_to_STM делаем не активной
 }
 
-
+/*
+*   слот для сигнала clicked() нопки Load_to_STM
+***************************************************/
 void MainWindow::on_Load_to_STM_clicked()
 {
-    QByteArray temp_array("hello st\r");
+    QByteArray temp_array("hello st\r");            // создаем временный объект QByteArray и записываем в него строчку "hello st\r"
 
-    ui->Load_to_STM->setEnabled(false);
-    /*file.setFileName(ui->FileName->text());
-    file.open(QIODevice::ReadOnly);
-    temp_array=file.read(5000);
-    //array=file.readAll();//
-    //file.close();*/
-    serial.write(temp_array);
-    ui->progressBar->setValue(0);
-    ui->progressBar->setVisible(true);
-    //timer.start(10000);
+    ui->Load_to_STM->setEnabled(false);             // делаем кнопку Load_to_STM не активной на время загрузки бинарника
 
+    serial.write(temp_array);                       // записываем в порт массив из QByteArray для начала передачи с STM32
+    ui->progressBar->setValue(0);                   // Для progressBar устанавливаем начальное  значение 0 %
+    ui->progressBar->setVisible(true);              // progressBar делаем видимым для индикации процесса загрузки
+    timer.start(2000);                              // запускаем таймер с периодом 2 сек
 }
+
+/*
+*   слот для сигнала timeout() QTimer timer
+*****************************************************/
 void MainWindow::TimerExpire()
 {
-    timer.stop();
-    serial.close();
-    ui->COMx->setEnabled(true);
-    ui->SPEED->setEnabled(true);
-    ui->Connect->setEnabled(true);
-    ui->Load_to_STM->setEnabled(true);
-    ui->Disconnect->setEnabled(false);
-
-    QMessageBox::information(this,tr("Error"),"ERROR! STM32 not ready! ");
+   /* если таймер истек значит ответа от STM32 нет 2 сек */
+    timer.stop();                               // останавливаем таймер
+    serial.close();                             // закрываем QSerial port
+    ui->COMx->setEnabled(true);                 // виджет COMx активный
+    ui->SPEED->setEnabled(true);                // виджет SPEED активный
+    ui->Connect->setEnabled(true);              // кнопка Connect активна
+    ui->Load_to_STM->setEnabled(true);          // кнопка Load_to_STM активна
+    ui->Disconnect->setEnabled(false);          // кнопка Disconnect  не активна
+    QMessageBox::information(this,tr("Error"),"ERROR! STM32 not ready! ");  // выводим сообщение об ошибки что STM32 не отвечает более 2 сек
 }
 
+/*
+*   слот для сигнала redyRead() QSerialPort serial
+******************************************************/
 void MainWindow::RecieveBytes()
 {
+   /* каждый раз при получении ответа от STM32 или при подтверждении
+      очередной переданной порции делаем рестарт таймера на следующие 2 секунды */
+      timer.start(2000);
+
       QByteArray array_x=serial.readAll();
       array.append(array_x);
 
@@ -216,6 +232,7 @@ void MainWindow::RecieveBytes()
          }
        else if(array.endsWith("crc ok!"))
          {
+           timer.stop();
            ui->progressBar->setVisible(false);
            file.close();
            serial.close();
@@ -228,6 +245,7 @@ void MainWindow::RecieveBytes()
          }
        else if(array.endsWith("crc error!"))
          {
+            timer.stop();
             ui->progressBar->setVisible(false);
             file.close();
             serial.close();
@@ -241,8 +259,3 @@ void MainWindow::RecieveBytes()
 
 }
 
-/*void MainWindow::SerialPortError()
-{
-
-     QMessageBox::information(this,tr("Message"),"OK!");
-}*/
