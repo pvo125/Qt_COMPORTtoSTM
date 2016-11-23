@@ -194,67 +194,69 @@ void MainWindow::RecieveBytes()
    /* каждый раз при получении ответа от STM32 или при подтверждении
       очередной переданной порции делаем рестарт таймера на следующие 2 секунды */
       timer.start(2000);
-
+    /*временный массив  QByteArray array_x для считывания данных с COM порта каждый раз по сигналу readyRead() */
       QByteArray array_x=serial.readAll();
-      array.append(array_x);
+      array.append(array_x);                  // склеиваем части приходящих байт в одну строку -сообщение в  QByteArray array
 
-      if(array.endsWith("get size"))
+      if(array.endsWith("get size"))        // сравниваем конец строки с сообщением "get size"
          {
-
-          array.clear();
-          file.setFileName(ui->FileName->text());
-          file.open(QIODevice::ReadOnly);
-          quint32 size=file.size();
-          QByteArray x=QByteArray::number(size);
-          QByteArray y="\r";
-          x.append(y);
-          serial.write(x);
+          /* если пришел ответ от STM32 "get size"  готовимся послать размер бинарника в виде символьной строки */
+          array.clear();                           // очищаем  QByteArray array для приема след. сообщениий
+          file.setFileName(ui->FileName->text());  // задаем полное имя файла+путь с виджета LineEdit
+          file.open(QIODevice::ReadOnly);          // открываем указанный файл с атрибутом  ReadOnly
+          quint32 size=file.size();                // в переменную size записываем размер бинарника
+          QByteArray x=QByteArray::number(size);   // в объект QByteArray x записываем размер файла в виде символьной строки (216436==32 31 36 34 33 36)
+          QByteArray y="\r";                      // создаем объект QByteArray y в который записываем символ "\r"
+          x.append(y);                            // склеиваем массивы x и y в x получаем 32 31 36 34 33 36 0D
+          serial.write(x);                         // записываем в порт эту строку с размером файла
          }
-        else if(array.endsWith("get data"))
+        else if(array.endsWith("get data"))             /* если от МК приняли сообщение "get data"*/
          {
-             qint32 a=(file.pos()*100)/file.size();
-             ui->progressBar->setValue(a);
-            a=(file.size())-(file.pos());
 
+            qint32 a=(file.pos()*100)/file.size();      // в a заносим процент переданных частей от файла
+             ui->progressBar->setValue(a);              // отображаем этот процент на progressbar
+            a=(file.size())-(file.pos());               // в a заносим число с текущим положением точки считывание очередной порции байт
+        /* если a<10000 значит остался небольшой "хвост" в конце файла который надо отправить порцией меньшей чем 10000 */
             if(a<10000)
              {
-               QByteArray temp_array=file.read(a);
-                serial.write(temp_array);
-                file.close();
+               QByteArray temp_array=file.read(a);      // считываем количество этх данных во временный массив QByteArray temp_array
+                serial.write(temp_array);               // отправляем этот "хвост" в порт
+                file.close();                          // закрываем открытый файл так как все данные с файла считали
 
              }
-             else
+         /* иначе если a>10000 нужно считать из файла очередную порцию в 10000 байт и отправить их через порт */
+            else
              {
-               QByteArray temp_array=file.read(10000);
-               serial.write(temp_array);
+               QByteArray temp_array=file.read(10000);  // читаем 10000 байт с файла во временный массив QByteArray temp_array
+               serial.write(temp_array);                // записываем очередные 10000 байт в порт для отправки на МК
 
              }
          }
-       else if(array.endsWith("crc ok!"))
+       else if(array.endsWith("crc ok!"))                /* если от МК приняли сообщение "crc ok!" */
          {
-           timer.stop();
-           ui->progressBar->setVisible(false);
-           file.close();
-           serial.close();
-           ui->COMx->setEnabled(true);
-           ui->SPEED->setEnabled(true);
-           ui->Connect->setEnabled(true);
-           ui->Load_to_STM->setEnabled(true);
-           ui->Disconnect->setEnabled(false);
-           QMessageBox::information(this,tr("Message"),"OK!");
+           timer.stop();                                // останавливаем таймер
+           ui->progressBar->setVisible(false);          // progressbar делаем невидимым
+           file.close();                                // закрываем открытый файл так как все данные с файла считали
+           serial.close();                              // закрываем COM порт
+           ui->COMx->setEnabled(true);                  // виджет COMx активный
+           ui->SPEED->setEnabled(true);                 // виджет SPEED активный
+           ui->Connect->setEnabled(true);               // кнопка Connect активна
+           ui->Load_to_STM->setEnabled(true);           // кнопка Load_to_STM активна
+           ui->Disconnect->setEnabled(false);           // кнопка Disconnect  не активна
+           QMessageBox::information(this,tr("Message"),"OK!");  // выводим сообщение об успешной передачи
          }
-       else if(array.endsWith("crc error!"))
+       else if(array.endsWith("crc error!"))            /* если от МК приняли сообщение "crc error!" */
          {
-            timer.stop();
-            ui->progressBar->setVisible(false);
-            file.close();
-            serial.close();
-            ui->COMx->setEnabled(true);
-            ui->SPEED->setEnabled(true);
-            ui->Connect->setEnabled(true);
-            ui->Load_to_STM->setEnabled(true);
-            ui->Disconnect->setEnabled(false);
-            QMessageBox::information(this,tr("Message"),"CRC ERROR!");
+            timer.stop();                               // останавливаем таймер
+            ui->progressBar->setVisible(false);         // progressbar делаем невидимым
+            file.close();                               // закрываем открытый файл так как все данные с файла считали
+            serial.close();                             // закрываем COM порт
+            ui->COMx->setEnabled(true);                 // виджет COMx активный
+            ui->SPEED->setEnabled(true);                // виджет SPEED активный
+            ui->Connect->setEnabled(true);              // кнопка Connect активна
+            ui->Load_to_STM->setEnabled(true);          // кнопка Load_to_STM активна
+            ui->Disconnect->setEnabled(false);          // кнопка Disconnect  не активна
+            QMessageBox::information(this,tr("Message"),"CRC ERROR!");  // выводим сообщение об ошибки контрольной суммы
          }
 
 }
