@@ -257,7 +257,7 @@ void MainWindow::RecieveBytes()
             ui->Load_to_STM->setEnabled(true);          // кнопка Load_to_STM активна
             ui->Disconnect->setEnabled(false);          // кнопка Disconnect  не активна
             QMessageBox::information(this,tr("Message"),"CRC ERROR!");  // выводим сообщение об ошибки контрольной суммы
-         }
+         }  //privet
 
 }
 
