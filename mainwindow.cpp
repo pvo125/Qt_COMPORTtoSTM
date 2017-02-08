@@ -220,14 +220,18 @@ void MainWindow::RecieveBytes()
             if(a<10000)
              {
                QByteArray temp_array=file.read(a);      // считываем количество этх данных во временный массив QByteArray temp_array
-                serial.write(temp_array);               // отправляем этот "хвост" в порт
-                file.close();                          // закрываем открытый файл так как все данные с файла считали
+               QByteArray y="\r";                      // создаем объект QByteArray y в который записываем символ "\r"
+               temp_array.append(y);                   // склеиваем массивы temp_array и y в temp_array
+               serial.write(temp_array);               // отправляем этот "хвост" в порт
+               file.close();                          // закрываем открытый файл так как все данные с файла считали
 
              }
          /* иначе если a>10000 нужно считать из файла очередную порцию в 10000 байт и отправить их через порт */
             else
              {
                QByteArray temp_array=file.read(10000);  // читаем 10000 байт с файла во временный массив QByteArray temp_array
+               QByteArray y="\r";                      // создаем объект QByteArray y в который записываем символ "\r"
+               temp_array.append(y);                   // склеиваем массивы temp_array и y в temp_array
                serial.write(temp_array);                // записываем очередные 10000 байт в порт для отправки на МК
 
              }
