@@ -263,5 +263,5 @@ void MainWindow::RecieveBytes()
             QMessageBox::information(this,tr("Message"),"CRC ERROR!");  // выводим сообщение об ошибки контрольной суммы
          }
 
-}//ну тогда еще раз для проверки
+}//и еще разок
 
