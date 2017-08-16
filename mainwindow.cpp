@@ -9,6 +9,7 @@
 #include "QFile"
 //#include "QWidget"
 
+int speed;
 QTimer timer;
 
 /*
@@ -81,14 +82,14 @@ void MainWindow::on_Connect_clicked()
     if(serial.open(QIODevice::ReadWrite))          // открываем данный порт с проверкой
        {                                         // если открыли успешно продолжаем насройки порта
         switch(ui->SPEED->currentIndex()){       // задаем скорость порта в зависимости от выбора в виджете SPEED
-             case 0: serial.setBaudRate(QSerialPort::Baud1200); break;
-             case 1: serial.setBaudRate(QSerialPort::Baud2400); break;
-             case 2: serial.setBaudRate(QSerialPort::Baud4800); break;
-             case 3: serial.setBaudRate(QSerialPort::Baud9600); break;
-             case 4: serial.setBaudRate(QSerialPort::Baud19200); break;
-             case 5: serial.setBaudRate(QSerialPort::Baud38400); break;
-             case 6: serial.setBaudRate(QSerialPort::Baud57600); break;
-             case 7: serial.setBaudRate(QSerialPort::Baud115200); break;
+             case 0: serial.setBaudRate(QSerialPort::Baud1200);  speed=1200; break;
+             case 1: serial.setBaudRate(QSerialPort::Baud2400);  speed=2400; break;
+             case 2: serial.setBaudRate(QSerialPort::Baud4800);  speed=4800; break;
+             case 3: serial.setBaudRate(QSerialPort::Baud9600);  speed=9600; break;
+             case 4: serial.setBaudRate(QSerialPort::Baud19200); speed=1920; break;
+             case 5: serial.setBaudRate(QSerialPort::Baud38400); speed=38400; break;
+             case 6: serial.setBaudRate(QSerialPort::Baud57600); speed=57600; break;
+             case 7: serial.setBaudRate(QSerialPort::Baud115200);speed=115200; break;
             }
 
         serial.setDataBits(QSerialPort::Data8);
@@ -167,7 +168,7 @@ void MainWindow::on_Load_to_STM_clicked()
     serial.write(temp_array);                       // записываем в порт массив из QByteArray для начала передачи с STM32
     ui->progressBar->setValue(0);                   // Для progressBar устанавливаем начальное  значение 0 %
     ui->progressBar->setVisible(true);              // progressBar делаем видимым для индикации процесса загрузки
-    timer.start(2000);                              // запускаем таймер с периодом 2 сек
+    timer.start((116000000/speed)+1000);            // запускаем таймер с периодом 116000000/speed+1 сек
 }
 
 /*
@@ -192,8 +193,8 @@ void MainWindow::TimerExpire()
 void MainWindow::RecieveBytes()
 {
    /* каждый раз при получении ответа от STM32 или при подтверждении
-      очередной переданной порции делаем рестарт таймера на следующие 2 секунды */
-      timer.start(2000);
+      очередной переданной порции делаем рестарт таймера на следующие n секунд */
+      timer.start((116000000/speed)+1000);
     /*временный массив  QByteArray array_x для считывания данных с COM порта каждый раз по сигналу readyRead() */
       QByteArray array_x=serial.readAll();
       array.append(array_x);                  // склеиваем части приходящих байт в одну строку -сообщение в  QByteArray array
